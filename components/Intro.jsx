@@ -25,7 +25,7 @@ const STRIKES = [
 ];
 const COPY = {
   id: ['Selamat datang di', 'Portofolio'],
-  en: ['Welcome to my', 'Portfolio'],
+  en: ['Welcome to my', 'Portofolio'],
 };
 
 /* warna aksen tema (--ac) dibaca langsung dari CSS */
@@ -429,6 +429,7 @@ export default function Intro() {
     const leave = (fast) => {
       if (leaving) return;
       leaving = true;
+      window.removeEventListener('keydown', onKey);
       el.classList.add('out');
       if (fast) el.classList.add('fast');
       html.dataset.intro = 'out';
@@ -437,7 +438,11 @@ export default function Intro() {
       at(fast ? 600 : 1150, () => { cancelAnimationFrame(raf); delete html.dataset.intro; });
     };
     const onClick = () => leave(true);
-    const onKey = (e) => { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); leave(true); } };
+    const onKey = (e) => {
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); leave(true); }
+    };
     el.addEventListener('click', onClick);
     window.addEventListener('keydown', onKey);
 
