@@ -608,43 +608,62 @@ function CertDialog({ item, lang, t, onClose }) {
   );
 }
 
-/* Jumlah pengunjung + tombol suka / tidak suka */
+/* Jumlah pengunjung + tombol suka / tidak suka.
+   Kalau statistik gagal dimuat, buka alamat situs dengan tambahan ?debug=1 untuk melihat penyebabnya. */
+const ls = {
+  get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  del: (k) => { try { localStorage.removeItem(k); } catch {} },
+};
+
 function Reactions({ t }) {
   const [s, setS] = useState({ visits: 0, likes: 0, dislikes: 0 });
   const [mine, setMine] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [dbg, setDbg] = useState(false);
+
+  const fail = (e) => { console.error(e); setErr(String(e?.message || e)); };
 
   const load = async () => {
-    const r = await sb('site_stats?id=eq.1&select=visits,likes,dislikes');
+    const r = await sb('site_stats?id=eq.1&select=visits,likes,dislikes', { cache: 'no-store' });
     if (!r.ok) throw new Error(`Baca gagal ${r.status}: ${await r.text()}`);
-    const [row] = await r.json();
-    if (row) setS(row);
+    const rows = await r.json();
+    if (!rows[0]) throw new Error('Baris id=1 belum ada di tabel site_stats');
+    setS(rows[0]);
+    setErr('');
   };
 
   useEffect(() => {
-    setMine(localStorage.getItem('vote'));
+    setMine(ls.get('vote'));
+    setDbg(/[?&]debug\b/.test(window.location.search));
     (async () => {
       try {
-        if (!SB || !KEY) throw new Error('Env Supabase belum terisi (cek .env.local)');
-        if (!localStorage.getItem('visited')) {
+        if (!SB || !KEY) throw new Error('Env Supabase belum terisi di Vercel (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY), lalu Redeploy');
+        if (!ls.get('visited')) {
           const r = await sb('rpc/increment_visit', { method: 'POST', body: '{}' });
           if (!r.ok) throw new Error(`Kunjungan gagal ${r.status}: ${await r.text()}`);
-          localStorage.setItem('visited', '1');
+          ls.set('visited', '1');
         }
         await load();
-      } catch (e) { console.error(e); }
+      } catch (e) { fail(e); }
     })();
   }, []);
 
   const vote = async (kind) => {
+    if (busy) return;
     const next = mine === kind ? null : kind; // klik lagi = batalkan
+    setBusy(true);
     try {
+      if (!SB || !KEY) throw new Error('Env Supabase belum terisi');
       const r = await sb('rpc/vote', { method: 'POST', body: JSON.stringify({ new_kind: next, old_kind: mine }) });
       if (!r.ok) throw new Error(`Vote gagal ${r.status}: ${await r.text()}`);
-      if (next) localStorage.setItem('vote', next);
-      else localStorage.removeItem('vote');
+      if (next) ls.set('vote', next);
+      else ls.del('vote');
       setMine(next);
       await load();
-    } catch (e) { console.error(e); }
+    } catch (e) { fail(e); }
+    setBusy(false);
   };
 
   return (
@@ -653,16 +672,17 @@ function Reactions({ t }) {
       <ul className="stats">
         <li><b>{s.visits}</b>{t.views}</li>
         <li>
-          <button type="button" className={`react ${mine === 'like' ? 'on' : ''}`} onClick={() => vote('like')} aria-pressed={mine === 'like'} aria-label="Like">
+          <button type="button" className={`react ${mine === 'like' ? 'on' : ''}`} onClick={() => vote('like')} disabled={busy} aria-pressed={mine === 'like'} aria-label="Like">
             👍 <b>{s.likes}</b>
           </button>
         </li>
         <li>
-          <button type="button" className={`react ${mine === 'dislike' ? 'on' : ''}`} onClick={() => vote('dislike')} aria-pressed={mine === 'dislike'} aria-label="Dislike">
+          <button type="button" className={`react ${mine === 'dislike' ? 'on' : ''}`} onClick={() => vote('dislike')} disabled={busy} aria-pressed={mine === 'dislike'} aria-label="Dislike">
             👎 <b>{s.dislikes}</b>
           </button>
         </li>
       </ul>
+      {dbg && err ? <p role="alert" style={{ flexBasis: '100%', margin: 0, fontSize: '.78rem', color: '#ff8a8a', wordBreak: 'break-word' }}>{err}</p> : null}
     </>
   );
 }

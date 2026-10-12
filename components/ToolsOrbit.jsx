@@ -272,7 +272,7 @@ export default function ToolsOrbit({ title, tools = [], icons = {}, colors = {} 
       <div className="tl-stage" ref={stage} style={{ '--shm': `${Math.max(320, rows * 88 + 150)}px` }}>
         <div className="tl-bg" aria-hidden="true">
           <i className="tl-blob a" /><i className="tl-blob b" /><i className="tl-blob c" />
-          <i className="tl-grid" /><i className="tl-ring" /><i className="tl-ring b" />
+          <i className="tl-ring" /><i className="tl-ring b" />
         </div>
 
         <div className="tl-field" ref={field} role="group" aria-label={typeof title === 'string' ? title : undefined}>

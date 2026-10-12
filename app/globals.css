@@ -1276,3 +1276,11 @@ html[data-intro='on'] .top, html[data-intro='on'] .mega span, html[data-intro='o
   .cutout { position: relative; left: auto; bottom: auto; transform: none; translate: none; height: min(115vw, 540px); margin: -3vw auto 0; }
 }
 @media (prefers-reduced-motion: reduce) { .cutout { translate: none; } .cutout img { animation: none; } }
+
+/* ===== HP / layar sentuh: tumpukan kartu "Tentang" tidak menimpa CV dan semua label terlihat ===== */
+@media (max-width: 900px), (hover: none) {
+  .st3, .st3:hover { --gap: 92px; }
+  .a3 .st3 { height: 470px; margin-top: 8px; margin-bottom: -30px; }
+  .st3-stack { top: 60%; }
+  .st3-slab { align-items: flex-end; padding-bottom: 14px; }
+}
