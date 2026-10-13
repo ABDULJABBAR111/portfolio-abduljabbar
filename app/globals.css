@@ -1285,26 +1285,30 @@ html[data-intro='on'] .top, html[data-intro='on'] .mega span, html[data-intro='o
   .st3-slab { align-items: flex-end; padding-bottom: 14px; }
 }
 
-/* ===== Hero: nama "Abdul Jabbar" sejajar selebar teks PORTOFOLIO (hover = huruf menghindar, tarik = diseret) ===== */
+/* ===== Hero: nama "Abdul Jabbar" bergaris tepi (outline), diapit garis, di bawah teks PORTOFOLIO. Hover = huruf menghindar, tarik = diseret ===== */
 .cutout.nm { width: 100%; height: 100%; left: 0; transform: none; }
 .nm-name {
-  position: absolute; left: 0; right: 0; top: 55%; translate: 0 -50%; display: flex; flex-wrap: nowrap; justify-content: space-between; align-items: center;
-  pointer-events: auto; touch-action: pan-y; user-select: none; -webkit-user-select: none; padding: 6px 1.2%;
-  font-family: var(--f-display), Impact, sans-serif; font-weight: 400; font-size: clamp(2.4rem, 8.4vw, 9rem); line-height: 1; letter-spacing: 0; text-transform: uppercase;
+  position: absolute; left: 0; right: 0; top: 55%; translate: 0 -50%; display: flex; flex-wrap: nowrap; justify-content: center; align-items: center;
+  pointer-events: none; touch-action: pan-y; user-select: none; -webkit-user-select: none; padding: 8px 0;
+  font-family: var(--f-display), Impact, sans-serif; font-weight: 400; font-size: clamp(2rem, 6.6vw, 7.4rem); line-height: 1; letter-spacing: 0; text-transform: uppercase;
 }
+.nm-name::before, .nm-name::after { content: ''; flex: 0 0 clamp(36px, 6vw, 120px); height: 2px; border-radius: 2px; }
+.nm-name::before { margin-right: clamp(14px, 2.4vw, 44px); background: linear-gradient(90deg, transparent, var(--ac)); }
+.nm-name::after { margin-left: clamp(14px, 2.4vw, 44px); background: linear-gradient(270deg, transparent, var(--ac)); }
 .nm-word { display: contents; }
-.nm-word + .nm-word .nm-l:first-child { margin-left: .5em; }
+.nm-word + .nm-word .nm-l:first-child { margin-left: .42em; }
 .nm-l {
-  display: inline-block; cursor: grab; will-change: transform;
-  color: color-mix(in srgb, var(--ink) 88%, var(--ac)); text-shadow: 0 0 30px var(--glow), 0 12px 28px var(--shadow);
-  transition: color .25s; animation: nmIn .9s cubic-bezier(.2, .8, .2, 1) var(--d) backwards;
+  display: inline-block; cursor: grab; will-change: transform; pointer-events: auto; margin: 0 .018em;
+  color: transparent; -webkit-text-stroke: clamp(1.5px, .14vw, 3px) color-mix(in srgb, var(--ink) 92%, var(--ac));
+  text-shadow: 0 0 34px var(--glow); transition: color .25s;
+  animation: nmIn .9s cubic-bezier(.2, .8, .2, 1) var(--d) backwards;
 }
-.nm-l:hover { color: var(--ac); }
+.nm-l:hover { color: color-mix(in srgb, var(--ac) 80%, transparent); }
 .nm-l.is-drag { cursor: grabbing; color: var(--ac); }
 @keyframes nmIn { from { opacity: 0; translate: 0 30px; filter: blur(8px); } to { opacity: 1; translate: 0 0; filter: blur(0); } }
 @media (max-width: 900px) {
-  .cutout.nm { height: min(40vw, 190px); margin: 0 auto; }
-  .nm-name { top: 50%; font-size: 11.2vw; padding: 6px 2%; }
-  .nm-word { display: contents; }
+  .cutout.nm { height: min(30vw, 150px); margin: 0 auto; }
+  .nm-name { top: 50%; font-size: 9.4vw; }
+  .nm-name::before, .nm-name::after { flex-basis: 5vw; }
 }
 @media (prefers-reduced-motion: reduce) { .nm-l { animation: none; } }
