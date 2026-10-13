@@ -687,269 +687,27 @@ function Reactions({ t }) {
   );
 }
 
-/* Hero 3D: awan kubus kaca yang melayang, berputar pelan, dan menghindar dari kursor.
-   Digambar di <canvas> (tanpa pustaka tambahan, jadi ringan). Kubus terbang masuk satu per satu setelah layar pembuka,
-   kubus yang jauh dibuat buram (kedalaman), dan seluruh awan ikut miring mengikuti kursor.
-
-   ====== Pengaturan cepat ======
-   COUNT  : jumlah kubus
-   SPREAD : seberapa lebar awan menyebar (1 = pas bingkai)
-   REPEL  : kekuatan kubus menghindar dari kursor (0 = tidak menghindar)
-   SPIN   : kecepatan putar kubus */
-const COUNT = 36;
-const SPREAD = 1;
-const REPEL = 1;
-const SPIN = 1;
-
-function HeroCubes() {
-  const box = useRef(null);
-  const cvs = useRef(null);
-
+/* Hero: bola cahaya dengan cincin orbit. Murni CSS (hanya transform dan opacity), tanpa canvas, jadi ringan dan scroll tetap mulus.
+   Animasi otomatis berhenti saat hero tidak terlihat di layar. */
+function HeroOrb() {
+  const ref = useRef(null);
   useEffect(() => {
-    const wrap = box.current;
-    const cv = cvs.current;
-    const ctx = cv?.getContext('2d');
-    if (!wrap || !ctx) return;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const canBlur = typeof ctx.filter === 'string';
-    const mix = (a, b, t) => a + (b - a) * t;
-    const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-
-    /* warna aksen tema dibaca dari CSS */
-    const hex = getComputedStyle(document.documentElement).getPropertyValue('--ac').trim().replace('#', '');
-    const AC = /^[0-9a-f]{6}$/i.test(hex) ? [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)) : [139, 147, 255];
-    const DARK = [16, 22, 118];
-    const LITE = [mix(AC[0], 255, 0.4), mix(AC[1], 255, 0.4), mix(AC[2], 255, 0.3)];
-
-    let w = 1;
-    let h = 1;
-    let dpr = 1;
-    const fit = () => {
-      dpr = Math.min(1.5, window.devicePixelRatio || 1);
-      w = Math.max(1, wrap.clientWidth);
-      h = Math.max(1, wrap.clientHeight);
-      cv.width = Math.round(w * dpr);
-      cv.height = Math.round(h * dpr);
-    };
-    fit();
-
-    /* angka acak tetap (bentuk awan selalu sama) */
-    let seed = 20261013;
-    const rnd = () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-
-    const cubes = Array.from({ length: COUNT }, (_, i) => {
-      const big = i < 9;
-      const th = rnd() * 6.2832;
-      const ph = Math.acos(2 * rnd() - 1);
-      const r = big ? 0.2 + rnd() * 0.62 : 0.15 + Math.cbrt(rnd()) * 0.9;
-      const x = Math.sin(ph) * Math.cos(th) * r * 1.12 * SPREAD;
-      const y = Math.cos(ph) * r * 0.82 * SPREAD;
-      const z = Math.sin(ph) * Math.sin(th) * r * 0.9;
-      const l = Math.hypot(x, y, z) || 1;
-      return {
-        x, y, z, ox: x / l, oy: y / l, oz: z / l,
-        s: big ? 0.11 + rnd() * 0.065 : 0.032 + rnd() * 0.07,
-        a: [rnd() * 6.28, rnd() * 6.28, rnd() * 6.28],
-        v: [(rnd() - 0.5) * 0.9, (rnd() - 0.5) * 0.9, (rnd() - 0.5) * 0.55],
-        ph: rnd() * 6.28, glint: 0.3 + rnd() * 0.7,
-        dx: 0, dy: 0, vx: 0, vy: 0, delay: i * 60,
-      };
-    });
-    const dust = Array.from({ length: 26 }, () => ({ x: rnd() * 2 - 1, y: rnd() * 2 - 1, z: rnd() * 2 - 1, r: 0.6 + rnd() * 1.8, ph: rnd() * 6.28 }));
-
-    const V = [[-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1], [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]];
-    const FACES = [[0, 1, 2, 3, [0, 0, -1]], [4, 5, 6, 7, [0, 0, 1]], [0, 1, 5, 4, [0, -1, 0]], [3, 2, 6, 7, [0, 1, 0]], [0, 3, 7, 4, [-1, 0, 0]], [1, 2, 6, 5, [1, 0, 0]]];
-    const LD = (() => { const v = [-0.42, -0.62, 0.66]; const l = Math.hypot(...v); return v.map((c) => c / l); })();
-    const rotate = (p, a) => {
-      let [x, y, z] = p;
-      let c = Math.cos(a[0]);
-      let s = Math.sin(a[0]);
-      [y, z] = [y * c - z * s, y * s + z * c];
-      c = Math.cos(a[1]); s = Math.sin(a[1]);
-      [x, z] = [x * c + z * s, -x * s + z * c];
-      c = Math.cos(a[2]); s = Math.sin(a[2]);
-      [x, y] = [x * c - y * s, x * s + y * c];
-      return [x, y, z];
-    };
-
-    const P = { x: 0, y: 0, on: false };
-    const S = { yaw: 0, pitch: 0, last: 0, t0: 0, raf: 0, seen: true, begun: false };
-
-    const draw = (now) => {
-      S.raf = 0;
-      if (!S.seen) { S.last = 0; return; }
-      const dt = S.last ? Math.min(0.05, (now - S.last) / 1000) : 0.016;
-      S.last = now;
-      const t = now / 1000;
-      const RX = w / 2.45;
-      const RY = h / 2.35;
-      const U = Math.min(RX, RY);
-      const FP = U * 3.2;
-      const cx = w / 2;
-      const cy = h * 0.5;
-
-      const yawT = P.on ? (P.x / w - 0.5) * 1.3 : Math.sin(t * 0.28) * 0.4;
-      const pitchT = P.on ? (P.y / h - 0.5) * -0.7 : Math.cos(t * 0.21) * 0.16;
-      const k = 1 - Math.exp(-dt * 3.2);
-      S.yaw += (yawT - S.yaw) * k;
-      S.pitch += (pitchT - S.pitch) * k;
-      const cyw = Math.cos(S.yaw), syw = Math.sin(S.yaw), cp = Math.cos(S.pitch), sp = Math.sin(S.pitch);
-      const view = (x, y, z) => { // putar seluruh adegan (kiri-kanan lalu atas-bawah)
-        const x1 = x * cyw + z * syw;
-        const z1 = -x * syw + z * cyw;
-        return [x1, y * cp - z1 * sp, y * sp + z1 * cp];
-      };
-
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, w, h);
-
-      // debu cahaya
-      ctx.globalCompositeOperation = 'lighter';
-      for (const d of dust) {
-        const [x, y, z] = view(d.x * RX * 1.05, (d.y + Math.sin(t * 0.4 + d.ph) * 0.04) * RY * 0.95, d.z * U);
-        const sc = FP / (FP - z);
-        const px = cx + x * sc;
-        const py = cy + y * sc;
-        const r = d.r * 5 * sc;
-        const g = ctx.createRadialGradient(px, py, 0, px, py, r);
-        const a = 0.5 * (0.45 + 0.55 * Math.sin(t * 1.3 + d.ph)) * (S.begun ? 1 : 0);
-        g.addColorStop(0, `rgba(190,208,255,${a})`);
-        g.addColorStop(1, 'rgba(100,120,255,0)');
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(px, py, r, 0, 6.2832);
-        ctx.fill();
-      }
-
-      // posisi tiap kubus -> urut dari yang paling jauh
-      const items = [];
-      for (const c of cubes) {
-        const e = reduce ? 1 : S.begun ? clamp((now - S.t0 - c.delay) / 1500, 0, 1) : 0;
-        if (e <= 0.001) continue;
-        const ease = 1 - Math.pow(1 - e, 3);
-        const out = (1 - ease) * 2.6;
-        const bob = reduce ? 0 : Math.sin(t * 0.7 + c.ph) * 0.035;
-        const ctr = view((c.x + c.ox * out) * RX, (c.y + c.oy * out + bob) * RY, (c.z + c.oz * out) * U);
-        items.push({ c, e: ease, ctr });
-      }
-      items.sort((a, b) => a.ctr[2] - b.ctr[2]);
-
-      for (const { c, e, ctr } of items) {
-        if (!reduce) { c.a[0] += c.v[0] * SPIN * dt; c.a[1] += c.v[1] * SPIN * dt; c.a[2] += c.v[2] * SPIN * dt; }
-        const sc0 = FP / (FP - ctr[2]);
-        let X = cx + ctr[0] * sc0;
-        let Y = cy + ctr[1] * sc0;
-
-        // menghindar dari kursor (pegas)
-        if (!reduce) {
-          if (P.on && REPEL) {
-            const rx = X - P.x;
-            const ry = Y - P.y;
-            const d = Math.hypot(rx, ry) || 1;
-            const rad = U * 0.62;
-            if (d < rad) { const f = (1 - d / rad) ** 2 * 1700 * REPEL; c.vx += (rx / d) * f * dt; c.vy += (ry / d) * f * dt; }
-          }
-          c.vx += (-c.dx * 16 - c.vx * 5.5) * dt;
-          c.vy += (-c.dy * 16 - c.vy * 5.5) * dt;
-          c.dx += c.vx * dt;
-          c.dy += c.vy * dt;
-          X += c.dx;
-          Y += c.dy;
-        }
-
-        const size = c.s * U;
-        const depth = clamp((ctr[2] / U + 1.1) / 2.2, 0, 1); // 0 jauh .. 1 dekat
-        const blur = canBlur && depth < 0.36 ? (0.36 - depth) * 11 : 0;
-        const aD = (0.4 + depth * 0.6) * e;
-
-        // titik sudut: putar sendiri -> putar adegan -> proyeksi
-        const pts = V.map((v) => {
-          const r = rotate(v, c.a);
-          const o = view(r[0] * size, r[1] * size, r[2] * size);
-          const z = ctr[2] + o[2];
-          const s = FP / (FP - z);
-          return { x: X + (ctr[0] + o[0]) * s - ctr[0] * sc0, y: Y + (ctr[1] + o[1]) * s - ctr[1] * sc0, z };
-        });
-        const faces = FACES.map((f) => {
-          const n = view(...rotate(f[4], c.a));
-          return { f, n, z: (pts[f[0]].z + pts[f[1]].z + pts[f[2]].z + pts[f[3]].z) / 4 };
-        }).sort((a, b) => a.z - b.z);
-
-        ctx.save();
-        if (blur > 0.4) ctx.filter = `blur(${blur.toFixed(1)}px)`;
-        const lw = Math.max(0.7, size * 0.032);
-        for (const { f, n } of faces) {
-          const front = n[2] > 0;
-          const b = front ? Math.max(0, n[0] * LD[0] + n[1] * LD[1] + n[2] * LD[2]) : 0;
-          const br = 0.3 + 0.7 * b;
-          const side = front ? 1 : 0.45;
-          const col = [mix(DARK[0], LITE[0], br ** 1.4) | 0, mix(DARK[1], LITE[1], br ** 1.4) | 0, mix(DARK[2], LITE[2], br ** 1.4) | 0];
-          ctx.beginPath();
-          ctx.moveTo(pts[f[0]].x, pts[f[0]].y);
-          for (let i = 1; i < 4; i++) ctx.lineTo(pts[f[i]].x, pts[f[i]].y);
-          ctx.closePath();
-          ctx.globalCompositeOperation = 'lighter';
-          ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${(0.1 + 0.34 * br) * aD * side})`;
-          ctx.fill();
-          if (front && b > 0.82) { // kilap di permukaan yang menghadap cahaya
-            ctx.fillStyle = `rgba(255,255,255,${(b - 0.82) / 0.18 * 0.22 * c.glint * aD})`;
-            ctx.fill();
-          }
-          ctx.globalCompositeOperation = 'source-over';
-          ctx.lineJoin = 'round';
-          ctx.lineWidth = lw * (front ? 1 : 0.7);
-          ctx.strokeStyle = `rgba(${mix(130, 232, br) | 0},${mix(160, 240, br) | 0},255,${(0.28 + 0.62 * br) * aD * side})`;
-          ctx.stroke();
-        }
-        if (depth > 0.58 && size > U * 0.1) { // pendar biru di sekitar kubus besar yang dekat
-          ctx.globalCompositeOperation = 'lighter';
-          const g = ctx.createRadialGradient(X, Y, size * 0.4, X, Y, size * 2.4);
-          g.addColorStop(0, `rgba(${AC[0]},${AC[1]},${AC[2]},${0.2 * aD})`);
-          g.addColorStop(1, `rgba(${AC[0]},${AC[1]},${AC[2]},0)`);
-          ctx.fillStyle = g;
-          ctx.fillRect(X - size * 2.4, Y - size * 2.4, size * 4.8, size * 4.8);
-        }
-        ctx.restore();
-      }
-      ctx.globalCompositeOperation = 'source-over';
-      if (!reduce) S.raf = requestAnimationFrame(draw);
-    };
-
-    const kick = () => { if (!S.raf) S.raf = requestAnimationFrame(draw); };
-    const begin = () => { S.begun = true; S.t0 = performance.now(); kick(); };
-    const stage = wrap.parentElement;
-    const move = (e) => {
-      if (e.pointerType !== 'mouse') return;
-      const r = cv.getBoundingClientRect();
-      P.x = e.clientX - r.left;
-      P.y = e.clientY - r.top;
-      P.on = true;
-    };
-    const leave = () => { P.on = false; };
-    const io = new IntersectionObserver(([en]) => { S.seen = en.isIntersecting; if (S.seen) kick(); }, { threshold: 0 });
-    io.observe(wrap);
-    const ro = new ResizeObserver(() => { fit(); if (reduce) kick(); });
-    ro.observe(wrap);
-    stage?.addEventListener('pointermove', move);
-    stage?.addEventListener('pointerleave', leave);
-    // kubus mulai terbang masuk setelah layar pembuka selesai
-    const waiting = document.documentElement.dataset.intro === 'on';
-    if (waiting) window.addEventListener('intro:done', begin, { once: true });
-    else begin();
-    kick();
-    return () => {
-      io.disconnect();
-      ro.disconnect();
-      stage?.removeEventListener('pointermove', move);
-      stage?.removeEventListener('pointerleave', leave);
-      window.removeEventListener('intro:done', begin);
-      cancelAnimationFrame(S.raf);
-    };
+    const el = ref.current;
+    if (!el || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) delete el.dataset.off; else el.dataset.off = '1'; }, { threshold: 0 });
+    io.observe(el);
+    return () => io.disconnect();
   }, []);
-
   return (
-    <div className="cutout cubes" ref={box} aria-hidden="true">
-      <canvas ref={cvs} />
+    <div className="cutout orb3" ref={ref} aria-hidden="true">
+      <i className="orb3-glow" />
+      <div className="orb3-rings">
+        <span className="orb3-ring r1"><i /></span>
+        <span className="orb3-ring r2"><i /><i className="b" /></span>
+        <span className="orb3-ring r3"><i /></span>
+      </div>
+      <div className="orb3-core"><i className="orb3-spec" /></div>
+      <i className="orb3-sp s1" /><i className="orb3-sp s2" /><i className="orb3-sp s3" /><i className="orb3-sp s4" /><i className="orb3-sp s5" />
     </div>
   );
 }
@@ -1138,7 +896,7 @@ export default function Portfolio({ data }) {
 
         <i className="spot" aria-hidden="true" />
 
-        <HeroCubes />
+        <HeroOrb />
 
         <div className="badge" aria-hidden="true">
           <svg viewBox="0 0 120 120">
