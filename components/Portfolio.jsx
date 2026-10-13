@@ -585,7 +585,7 @@ function CertDialog({ item, lang, t, onClose }) {
             </dl>
             {item.pdf && (
               <>
-                <a className="dlg-cta" href={item.pdf} target="_blank" rel="noreferrer">{t.certPdf} ↗</a>
+                <a className="dlg-cta" href={item.pdf} target="_blank" rel="noreferrer">{item?.[`pdfLabel_${lang}`] ?? t.certPdf} ↗</a>
                 {item.pdfMissing && process.env.NODE_ENV !== 'production' && (
                   <p className="cdl-warn">File PDF belum ada. Taruh di folder <code>public</code> dengan nama <code>{String(item.pdf).replace(/^\//, '')}</code>, lalu muat ulang halaman.</p>
                 )}
@@ -1103,7 +1103,7 @@ export default function Portfolio({ data }) {
                 </span>
                 <span className="cert-foot">
                   <span className="cert-by">{c.issuer}</span>
-                  {c.units_id ? (
+                  {c.units_id || c.pdf ? (
                     <button type="button" className="cf-pill" disabled={!on} tabIndex={on ? 0 : -1} onClick={() => setOpenCert(c)}>{t.certDetail} →</button>
                   ) : null}
                 </span>
