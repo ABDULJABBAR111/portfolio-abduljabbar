@@ -70,7 +70,7 @@ const MY_PROJECTS = [
   },
 ];
 /* Ubah ke false untuk menyembunyikan 4 projek contoh (Elevate Studio, dll.) dari Supabase */
-const SHOW_SAMPLE_PROJECTS = true;
+const SHOW_SAMPLE_PROJECTS = false;
 
 /* Sertifikat asli. File PDF-nya ada di folder public/ */
 const CERTS = [
@@ -142,44 +142,44 @@ const CERTS = [
   },
   {
     id: 'sololearn-1',
-    title_id: 'Sololearn: Learn to Code',
-    title_en: 'Sololearn: Learn to Code',
+    title_id: 'Sololearn: JavaScript Intermediate',
+    title_en: 'Sololearn: JavaScript Intermediate',
     issuer: 'Sololearn',
     name: 'Abdul Jabbar',
-    role: 'Learn to Code',
+    role: 'JAVASCRIPT INTERMEDIATE',
     pdf: 'https://www.sololearn.com/en/certificates/CC-WRXK0VCF',
     pdfLabel_id: 'Lihat sertifikat di Sololearn',
     pdfLabel_en: 'View certificate on Sololearn',
   },
   {
     id: 'sololearn-2',
-    title_id: 'Sololearn: Learn to Code',
-    title_en: 'Sololearn: Learn to Code',
+    title_id: 'Sololearn: Introduction to JavaScript',
+    title_en: 'Sololearn: Introduction to JavaScript',
     issuer: 'Sololearn',
     name: 'Abdul Jabbar',
-    role: 'Learn to Code',
+    role: 'INTRODUCTION TO JAVASCRIPT',
     pdf: 'https://www.sololearn.com/en/certificates/CC-NZT50ONT',
     pdfLabel_id: 'Lihat sertifikat di Sololearn',
     pdfLabel_en: 'View certificate on Sololearn',
   },
   {
     id: 'sololearn-3',
-    title_id: 'Sololearn: Learn to Code',
-    title_en: 'Sololearn: Learn to Code',
+    title_id: 'Sololearn: Introduction to CSS',
+    title_en: 'Sololearn: Introduction to CSS',
     issuer: 'Sololearn',
     name: 'Abdul Jabbar',
-    role: 'Learn to Code',
+    role: 'INTRODUCTION TO CSS',
     pdf: 'https://www.sololearn.com/en/certificates/CC-IVVCJVHA',
     pdfLabel_id: 'Lihat sertifikat di Sololearn',
     pdfLabel_en: 'View certificate on Sololearn',
   },
   {
     id: 'sololearn-4',
-    title_id: 'Sololearn: Learn to Code',
-    title_en: 'Sololearn: Learn to Code',
+    title_id: 'Sololearn: Introduction to HTML',
+    title_en: 'Sololearn: Introduction to HTML',
     issuer: 'Sololearn',
     name: 'Abdul Jabbar',
-    role: 'Learn to Code',
+    role: 'INTRODUCTION TO HTML',
     pdf: 'https://www.sololearn.com/en/certificates/CC-N73NVUR3',
     pdfLabel_id: 'Lihat sertifikat di Sololearn',
     pdfLabel_en: 'View certificate on Sololearn',
