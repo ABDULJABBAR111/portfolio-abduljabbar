@@ -687,27 +687,130 @@ function Reactions({ t }) {
   );
 }
 
-/* Hero: bola cahaya dengan cincin orbit. Murni CSS (hanya transform dan opacity), tanpa canvas, jadi ringan dan scroll tetap mulus.
-   Animasi otomatis berhenti saat hero tidak terlihat di layar. */
-function HeroOrb() {
+/* Hero: nama yang bisa digerakkan. Huruf menghindar dari kursor, bisa diseret, lalu kembali dengan efek pegas.
+   Tanpa canvas. Animasi hanya berjalan saat ada gerakan, jadi scroll tetap ringan. */
+function HeroName({ name }) {
   const ref = useRef(null);
   useEffect(() => {
-    const el = ref.current;
-    if (!el || !('IntersectionObserver' in window)) return;
-    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) delete el.dataset.off; else el.dataset.off = '1'; }, { threshold: 0 });
-    io.observe(el);
-    return () => io.disconnect();
+    const root = ref.current;
+    if (!root) return;
+    const L = Array.from(root.querySelectorAll('[data-l]')).map((el) => ({ el, x: 0, y: 0, vx: 0, vy: 0, cx: 0, cy: 0 }));
+    let raf = 0, visible = true, ptr = null, drag = null;
+    const R = () => (window.innerWidth < 700 ? 90 : 150);
+
+    const measure = () => {
+      const b = root.getBoundingClientRect();
+      L.forEach((o) => {
+        const r = o.el.getBoundingClientRect();
+        o.cx = r.left - b.left + r.width / 2 - o.x;
+        o.cy = r.top - b.top + r.height / 2 - o.y;
+      });
+    };
+    const local = (e) => { const b = root.getBoundingClientRect(); return { x: e.clientX - b.left, y: e.clientY - b.top, b }; };
+
+    const step = () => {
+      raf = 0;
+      let moving = false;
+      const rad = R();
+      let src = ptr;
+      if (drag) src = { x: drag.o.cx + drag.o.x, y: drag.o.cy + drag.o.y };
+      for (const o of L) {
+        if (drag && drag.o === o) {
+          o.x = drag.px - o.cx - drag.ox; o.y = drag.py - o.cy - drag.oy;
+          o.vx = o.vy = 0;
+        } else {
+          if (src) {
+            const dx = o.cx + o.x - src.x, dy = o.cy + o.y - src.y, d = Math.hypot(dx, dy) || 1;
+            if (d < rad) { const f = Math.pow(1 - d / rad, 2) * 3.2; o.vx += (dx / d) * f; o.vy += (dy / d) * f; }
+          }
+          o.vx += -o.x * 0.07; o.vy += -o.y * 0.07;
+          o.vx *= 0.8; o.vy *= 0.8;
+          o.x += o.vx; o.y += o.vy;
+        }
+        const calm = Math.abs(o.x) < 0.05 && Math.abs(o.y) < 0.05 && Math.abs(o.vx) < 0.05 && Math.abs(o.vy) < 0.05;
+        if (calm && !(drag && drag.o === o)) { o.x = o.y = o.vx = o.vy = 0; o.el.style.transform = ''; }
+        else {
+          moving = true;
+          const rot = Math.max(-18, Math.min(18, o.vx * 1.6 + o.x * 0.06));
+          o.el.style.transform = `translate3d(${o.x.toFixed(2)}px,${o.y.toFixed(2)}px,0) rotate(${rot.toFixed(2)}deg)`;
+        }
+      }
+      if (drag) moving = true;
+      if (moving && visible) raf = requestAnimationFrame(step);
+    };
+    const kick = () => { if (!raf && visible) raf = requestAnimationFrame(step); };
+
+    const onMove = (e) => {
+      if (!visible) return;
+      const { x, y, b } = local(e);
+      if (drag) { drag.px = x; drag.py = y; kick(); return; }
+      if (e.pointerType !== 'mouse') return;
+      const pad = R();
+      if (x < -pad || y < -pad || x > b.width + pad || y > b.height + pad) { if (ptr) { ptr = null; kick(); } return; }
+      ptr = { x, y }; kick();
+    };
+    const onDown = (e) => {
+      const t = e.target.closest && e.target.closest('[data-l]');
+      measure();
+      const { x, y } = local(e);
+      if (!t) return;
+      const o = L.find((q) => q.el === t);
+      if (!o) return;
+      drag = { o, px: x, py: y, ox: x - (o.cx + o.x), oy: y - (o.cy + o.y) };
+      o.el.classList.add('is-drag');
+      try { root.setPointerCapture(e.pointerId); } catch (_) {}
+      for (const q of L) { // letupan kecil saat disentuh
+        if (q === o) continue;
+        const dx = q.cx + q.x - x, dy = q.cy + q.y - y, d = Math.hypot(dx, dy) || 1;
+        if (d < 220) { const f = (1 - d / 220) * 9; q.vx += (dx / d) * f; q.vy += (dy / d) * f; }
+      }
+      kick();
+    };
+    const onUp = () => {
+      if (!drag) return;
+      drag.o.el.classList.remove('is-drag');
+      drag = null; ptr = null; kick();
+    };
+    const onLeave = () => { ptr = null; kick(); };
+
+    const io = 'IntersectionObserver' in window
+      ? new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) { measure(); kick(); } }, { threshold: 0 })
+      : null;
+    io && io.observe(root);
+    const onResize = () => { measure(); };
+    measure();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure).catch(() => {});
+    const t1 = setTimeout(measure, 1200);
+    window.addEventListener('resize', onResize);
+    window.addEventListener('pointermove', onMove, { passive: true });
+    root.addEventListener('pointerdown', onDown);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+    document.addEventListener('mouseleave', onLeave);
+    return () => {
+      cancelAnimationFrame(raf); clearTimeout(t1); io && io.disconnect();
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('pointermove', onMove);
+      root.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+      document.removeEventListener('mouseleave', onLeave);
+    };
   }, []);
+
+  const words = name.split(' ');
+  let k = 0;
   return (
-    <div className="cutout orb3" ref={ref} aria-hidden="true">
-      <i className="orb3-glow" />
-      <div className="orb3-rings">
-        <span className="orb3-ring r1"><i /></span>
-        <span className="orb3-ring r2"><i /><i className="b" /></span>
-        <span className="orb3-ring r3"><i /></span>
+    <div className="cutout nm">
+      <div className="nm-name" ref={ref} role="img" aria-label={name}>
+        {words.map((w, wi) => (
+          <span className="nm-word" key={wi} aria-hidden="true">
+            {w.split('').map((c) => (
+              <span className="nm-l" data-l="" key={k++} style={{ '--d': `${(k * 55) + 900}ms` }}>{c}</span>
+            ))}
+          </span>
+        ))}
       </div>
-      <div className="orb3-core"><i className="orb3-spec" /></div>
-      <i className="orb3-sp s1" /><i className="orb3-sp s2" /><i className="orb3-sp s3" /><i className="orb3-sp s4" /><i className="orb3-sp s5" />
     </div>
   );
 }
@@ -896,7 +999,7 @@ export default function Portfolio({ data }) {
 
         <i className="spot" aria-hidden="true" />
 
-        <HeroOrb />
+        <HeroName name={NAME} />
 
         <div className="badge" aria-hidden="true">
           <svg viewBox="0 0 120 120">
@@ -909,7 +1012,6 @@ export default function Portfolio({ data }) {
         <div className="hl">
           <W as="h2" className="cond" text={t.role} delay={700} step={90} />
           <W as="p" text={t.intro} delay={1100} step={45} />
-          <W className="sign" text={NAME} delay={2400} step={170} />
         </div>
 
         <div className="hr">
