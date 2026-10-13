@@ -1284,3 +1284,8 @@ html[data-intro='on'] .top, html[data-intro='on'] .mega span, html[data-intro='o
   .st3-stack { top: 60%; }
   .st3-slab { align-items: flex-end; padding-bottom: 14px; }
 }
+
+/* ===== Hero 3D: awan kubus kaca menggantikan foto ===== */
+.cutout.cubes { width: min(94%, 1280px); height: 100%; }
+.cutout.cubes canvas { display: block; width: 100%; height: 100%; }
+@media (max-width: 900px) { .cutout.cubes { width: 100%; height: min(105vw, 500px); margin: -2vw auto 0; } }
