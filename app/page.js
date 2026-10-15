@@ -68,6 +68,15 @@ const MY_PROJECTS = [
     link: 'https://abduljabbar111.github.io/Game-Tetris/',
     image_url: '',
   },
+  {
+    id: 'sistem-arsiparis',
+    sort: 5,
+    title: 'Sistem Informasi Arsiparis',
+    category_id: 'Sistem Informasi Kearsipan',
+    category_en: 'Archive Information System',
+    link: 'https://sistemarsiparis.infinityfreeapp.com/',
+    image_url: '',
+  },
 ];
 /* Ubah ke false untuk menyembunyikan 4 projek contoh (Elevate Studio, dll.) dari Supabase */
 const SHOW_SAMPLE_PROJECTS = false;
