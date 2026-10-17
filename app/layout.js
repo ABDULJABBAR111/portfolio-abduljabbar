@@ -11,6 +11,10 @@ export const metadata = {
   title: 'Abdul Jabbar — Portfolio',
   description: 'Creative portfolio — UI/UX & Web Development',
   other: { google: 'notranslate' },
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }, { url: '/favicon.ico', sizes: 'any' }],
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 /* true  = layar pembuka hanya tampil SEKALI per tab/sesi browser
