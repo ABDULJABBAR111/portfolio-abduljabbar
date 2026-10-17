@@ -74,8 +74,8 @@ const MY_PROJECTS = [
     title: 'Sistem Informasi Arsiparis',
     category_id: 'Sistem Informasi Kearsipan',
     category_en: 'Archive Information System',
-    link: 'https://sistemarsiparis.infinityfreeapp.com/',
-    image_url: '',
+    link: 'https://sistemarsiparis.infinityfreeapp.com/?i=2',
+    image_url: '/projek-arsiparis.jpg',
   },
 ];
 /* Ubah ke false untuk menyembunyikan 4 projek contoh (Elevate Studio, dll.) dari Supabase */

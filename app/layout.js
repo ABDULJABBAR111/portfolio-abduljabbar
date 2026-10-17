@@ -8,7 +8,7 @@ const serif = Cormorant_Garamond({ weight: ['500', '600', '700'], subsets: ['lat
 const sans = Inter({ subsets: ['latin'], variable: '--f-sans' });
 
 export const metadata = {
-  title: 'Portfolio | Abdul Jabbar',
+  title: 'Abdul Jabbar — Portfolio',
   description: 'Creative portfolio — UI/UX & Web Development',
   other: { google: 'notranslate' },
 };
